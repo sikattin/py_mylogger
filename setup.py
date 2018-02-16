@@ -12,10 +12,10 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='datetime_orig',
-    version='1.0',
-    description='module for operating date, datetime.',
-    long_description='module for operating date, datetime.',
+    name='mylogger',
+    version='1.1',
+    description='logger module.',
+    long_description='logger module',
     author='Takeki Shikano',
     author_email='shikano.takeki@nexon.co.jp',
     url=None,
