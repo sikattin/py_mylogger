@@ -8,6 +8,7 @@
 # Copyright:   (c) shikano.takeki 2017
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
+# -*- coding: utf-8 -*-
 from logging import getLogger, StreamHandler, FileHandler, Formatter, WARNING
 from logging.handlers import RotatingFileHandler
 import os, time
@@ -136,6 +137,7 @@ class FileLogger(Logger):
     def close(self):
         """close current stream."""
         self.handler.close()
+        super(FileLogger, self).close()
 
 class RotationLogger(Logger):
     """ディスク上のファイルにログを出力するロガーを提供するクラス.
@@ -158,6 +160,8 @@ class RotationLogger(Logger):
         self.handler = RotatingFileHandler(filename=filename, backupCount=bcount)
         self.handler.namer = self.namer
         Logger.__init__(self, logger_name=str(self), handler=self.handler)
+        if self._is_lines(path=filename):
+            self.do_rotation()
 
     def namer(self, path):
         """override method of RotationFileHandler.rotation_filename"""
@@ -176,14 +180,27 @@ class RotationLogger(Logger):
         """execute log file rotation.
         """
         self.handler.doRollover()
-        Logger.add_handler(self, self.handler)
+        super(RotationLogger, self).add_handler(self.handler)
 
     def set_backupCount(self, v: int):
         """backupCount setter."""
         self.backupCount = v
         self.handler.backupCount = self.backupCount
 
+    def _is_lines(self, path: str):
+        """check lines in a specified file.
+
+        if there are lines in it, return True, or False.
+        """
+        with open(path, mode='r') as f:
+            lines = f.readlines()
+            if len(lines) != 0:
+                return True
+            else:
+                return False
+
     def close(self):
         self.handler.close()
+        super(RotationLogger, self).close()
 
 
