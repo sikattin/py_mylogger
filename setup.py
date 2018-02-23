@@ -13,7 +13,7 @@ with open('LICENSE') as f:
 
 setup(
     name='mylogger',
-    version='1.1',
+    version='1.2',
     description='logger module.',
     long_description='logger module',
     author='Takeki Shikano',

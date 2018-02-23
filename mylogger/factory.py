@@ -9,7 +9,8 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from abc import ABCMeta, abstractmethod
-from logger import Logger
+from mylogger.logger import Logger
+import os
 
 
 LOG_FILE = "log.log"
@@ -17,12 +18,12 @@ LOG_FILE = "log.log"
 class Factory(metaclass=ABCMeta):
     """this class is abstrct class."""
 
-    loglevel = 0
-
     def __init__(self, loglevel=None):
         if loglevel is not None and \
                        not loglevel in {10, 20, 30, 40, 50}:
             raise TypeError("set valid loglevel in the range of 10 or 20 or 30 or 40 or 50")
+
+        self.loglevel = loglevel
         if loglevel is None:
             self.loglevel = 20
         # set loglevel.
@@ -59,6 +60,11 @@ class FileLoggerFactory(Factory):
             FileLogger instance.
         """
         from mylogger.logger import FileLogger
+        # if there is no the log file directory, make the directory.
+        split_path = os.path.split(file)
+        if not split_path[0] == '':
+            if not os.path.exists(split_path[0]):
+                os.makedirs(split_path[0])
         return FileLogger(filename=file)
 
 class RotationLoggerFactory(Factory):
@@ -79,5 +85,10 @@ class RotationLoggerFactory(Factory):
             RotationLogger instance.
         """
         from mylogger.logger import RotationLogger
+        # if there is no the log file directory, make the directory.
+        split_path = os.path.split(file)
+        if not split_path[0] == '':
+            if not os.path.exists(split_path[0]):
+                os.makedirs(split_path[0])
         return RotationLogger(filename=file, bcount=bcount)
 

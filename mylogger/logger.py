@@ -33,9 +33,9 @@ class Logger(object):
 
         Args:
             param1 logger_name: ロガーの名前.
+            param2 handler: Handler instance.
 
         Returns:
-            作成したロガー.
         """
         # ロガー作成.
         self._logger = getLogger(str(logger_name))
