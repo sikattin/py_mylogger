@@ -147,7 +147,7 @@ class RotationLogger(Logger):
     # use set_backupCount() to change this variable.
     backupCount = 3
 
-    def __init__(self, filename: str, bcount=None):
+    def __init__(self, filename: str, bcount=None, max_bytes=0):
         """constructor
             Args:
                 param1 filename: log file name.
@@ -157,7 +157,7 @@ class RotationLogger(Logger):
         if bcount is None:
             bcount = self.backupCount
         self.filename = filename
-        self.handler = RotatingFileHandler(filename=filename, backupCount=bcount)
+        self.handler = RotatingFileHandler(filename=filename, backupCount=bcount, maxBytes=max_bytes)
         self.handler.namer = self.namer
         Logger.__init__(self, logger_name=str(self), handler=self.handler)
         if self._is_lines(path=filename):
@@ -165,6 +165,7 @@ class RotationLogger(Logger):
 
     def namer(self, path):
         """override method of RotationFileHandler.rotation_filename"""
+        # prefixにdatetimeを付与する処理
         lt = time.localtime()
         tm_yaer, tm_mon, tm_mday = str(lt.tm_year), str(lt.tm_mon), str(lt.tm_mday)
         if len(str(lt.tm_mon)) == 1:

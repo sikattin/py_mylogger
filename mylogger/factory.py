@@ -72,7 +72,7 @@ class RotationLoggerFactory(Factory):
     def __init__(self, loglevel=None):
         super(RotationLoggerFactory, self).__init__(loglevel)
 
-    def create(self, file=LOG_FILE, bcount=None):
+    def create(self, file=LOG_FILE, bcount=None, max_bytes=0):
         """
         create RotationLogger instance.
         if file param is unset, log is outputed in current directory named 'log.log'
@@ -80,6 +80,7 @@ class RotationLoggerFactory(Factory):
         Args:
             param1 file: log file path. defulat is written in 'log.log'
             param2 bcount: backup generation count. default is 3.
+            param3 max_bytes: max limit of file byte size to rollover log.
 
         Return:
             RotationLogger instance.
@@ -90,5 +91,5 @@ class RotationLoggerFactory(Factory):
         if not split_path[0] == '':
             if not os.path.exists(split_path[0]):
                 os.makedirs(split_path[0])
-        return RotationLogger(filename=file, bcount=bcount)
+        return RotationLogger(filename=file, bcount=bcount, max_bytes=max_bytes)
 
