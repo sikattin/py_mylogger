@@ -14,6 +14,7 @@ import os
 
 
 LOG_FILE = "log.log"
+ROLLOVER_SIZE = 100 * 1024 * 1024
 
 class Factory(metaclass=ABCMeta):
     """this class is abstrct class."""
@@ -36,16 +37,18 @@ class Factory(metaclass=ABCMeta):
 class StdoutLoggerFactory(Factory):
     """this class is a StreamLogger Factory."""
 
-    def __init__(self, loglevel=None):
+    def __init__(self, logger_name=None, loglevel=None):
+        self._logger_name = logger_name
         super(StdoutLoggerFactory, self).__init__(loglevel)
 
     def create(self):
         from mylogger.logger import StreamLogger
-        return StreamLogger()
+        return StreamLogger(self._logger_name)
 
 class FileLoggerFactory(Factory):
 
-    def __init__(self, loglevel=None):
+    def __init__(self, logger_name=None, loglevel=None):
+        self._logger_name = logger_name
         super(FileLoggerFactory, self).__init__(loglevel)
 
     def create(self, file=LOG_FILE):
@@ -65,14 +68,15 @@ class FileLoggerFactory(Factory):
         if not split_path[0] == '':
             if not os.path.exists(split_path[0]):
                 os.makedirs(split_path[0])
-        return FileLogger(filename=file)
+        return FileLogger(filename=file, logger_name=self._logger_name)
 
 class RotationLoggerFactory(Factory):
     """this class is a RotationLoggerFactory."""
-    def __init__(self, loglevel=None):
+    def __init__(self, logger_name=None, loglevel=None):
+        self._logger_name = logger_name
         super(RotationLoggerFactory, self).__init__(loglevel)
 
-    def create(self, file=LOG_FILE, bcount=None, max_bytes=0):
+    def create(self, file=LOG_FILE, bcount=None, max_bytes=ROLLOVER_SIZE):
         """
         create RotationLogger instance.
         if file param is unset, log is outputed in current directory named 'log.log'
@@ -91,5 +95,6 @@ class RotationLoggerFactory(Factory):
         if not split_path[0] == '':
             if not os.path.exists(split_path[0]):
                 os.makedirs(split_path[0])
-        return RotationLogger(filename=file, bcount=bcount, max_bytes=max_bytes)
+        return RotationLogger(filename=file, logger_name=self._logger_name,
+                              bcount=bcount, max_bytes=max_bytes)
 

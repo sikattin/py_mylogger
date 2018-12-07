@@ -49,7 +49,7 @@ class Logger(object):
         self.h.setFormatter(formatter)
         # ロガーにハンドラを追加.
         self._logger.addHandler(self.h)
-        # ログを他の名前空間に伝播させないように.
+        # ログを親に伝播させない.
         self._logger.propagate = False
 
     def info(self, msg: str):
@@ -95,6 +95,18 @@ class Logger(object):
         """
         self._logger.error(msg)
 
+    def exception(self, msg: str):
+        """send message to logger.
+
+        please use in except clause.
+        Args:
+            param1 msg: 送信したいメッセージ
+
+        Returns:
+            Not returns value.
+        """
+        self._logger.exception(msg)
+
     def set_loglevel(self, level: int):
         """set log level.
 
@@ -123,16 +135,20 @@ class Logger(object):
 class StreamLogger(Logger):
     """標準出力、エラー出力にログを出力するロガーを提供するクラス."""
 
-    def __init__(self):
+    def __init__(self, logger_name: str):
+        if logger_name is None:
+            logger_name = str(self)
         Logger.__init__(self, logger_name=str(self), handler=StreamHandler())
 
 
 class FileLogger(Logger):
 
     """ディスク上のファイルにログを出力するロガーを提供するクラス."""
-    def __init__(self, filename: str):
-        self.handler = FileHandler(filename=filename)
-        Logger.__init__(self, logger_name=str(self), handler=self.handler)
+    def __init__(self, filename: str, logger_name: str):
+        if logger_name is None:
+            logger_name = str(self)
+        self.handler = FileHandler(filename=filename, mode='a+')
+        Logger.__init__(self, logger_name=logger_name, handler=self.handler)
 
     def close(self):
         """close current stream."""
@@ -147,7 +163,7 @@ class RotationLogger(Logger):
     # use set_backupCount() to change this variable.
     backupCount = 3
 
-    def __init__(self, filename: str, bcount=None, max_bytes=0):
+    def __init__(self, filename: str, logger_name: str, bcount=None, max_bytes=0):
         """constructor
             Args:
                 param1 filename: log file name.
@@ -156,12 +172,15 @@ class RotationLogger(Logger):
         """
         if bcount is None:
             bcount = self.backupCount
+        if logger_name is None:
+            logger_name = str(self)
         self.filename = filename
-        self.handler = RotatingFileHandler(filename=filename, backupCount=bcount, maxBytes=max_bytes)
+        self.handler = RotatingFileHandler(filename=filename,
+                                           mode='a+',
+                                           backupCount=bcount,
+                                           maxBytes=max_bytes)
         self.handler.namer = self.namer
-        Logger.__init__(self, logger_name=str(self), handler=self.handler)
-        if self._is_lines(path=filename):
-            self.do_rotation()
+        Logger.__init__(self, logger_name=logger_name, handler=self.handler)
 
     def namer(self, path):
         """override method of RotationFileHandler.rotation_filename"""
@@ -176,29 +195,18 @@ class RotationLogger(Logger):
         filename = datestr + "_" + os.path.split(path)[1]
         result = os.path.join(os.path.split(path)[0], filename)
         return result
-
+    '''
     def do_rotation(self):
         """execute log file rotation.
         """
-        self.handler.doRollover()
+        self.handler.emit('Rollover the log file')
         super(RotationLogger, self).add_handler(self.handler)
+    '''
 
     def set_backupCount(self, v: int):
         """backupCount setter."""
         self.backupCount = v
         self.handler.backupCount = self.backupCount
-
-    def _is_lines(self, path: str):
-        """check lines in a specified file.
-
-        if there are lines in it, return True, or False.
-        """
-        with open(path, mode='r') as f:
-            lines = f.readlines()
-            if len(lines) != 0:
-                return True
-            else:
-                return False
 
     def close(self):
         self.handler.close()
