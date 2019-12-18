@@ -165,12 +165,17 @@ class StreamLogger(Logger):
     def __init__(self, logger_name: str, loglevel=None):
         if logger_name is None:
             logger_name = str(self)
+        self.__handler = StreamHandler()
         Logger.__init__(
             self,
             logger_name=logger_name,
-            handler=StreamHandler(),
+            handler=self.__handler,
             loglevel=loglevel
         )
+
+    def close(self):
+        self.__handler.close()
+        super(StreamLogger, self).close()
 
 
 class FileLogger(Logger):
@@ -180,12 +185,16 @@ class FileLogger(Logger):
         if logger_name is None:
             logger_name = str(self)
         self.filename = filename
-        __handler = FileHandler(filename=self.filename, mode='a+')
+        self.__handler = FileHandler(filename=self.filename, mode='a+')
         Logger.__init__(
             self,
             logger_name=logger_name,
-            handler=__handler,
+            handler=self.__handler,
             loglevel=loglevel)
+
+    def close(self):
+        self.__handler.close()
+        super(FileLogger, self).close()
 
 
 class RotationLogger(Logger):
@@ -229,16 +238,16 @@ class RotationLogger(Logger):
         if self.bcount is None:
             self.bcount = RotationLogger.backupCount
 
-        __handler = RotatingFileHandler(filename=filename,
+        self.__handler = RotatingFileHandler(filename=filename,
                                         mode='a+',
                                         backupCount=self.bcount,
                                         maxBytes=self.max_bytes)
         if self.is_change_fname:
-            __handler.namer = self.namer
+            self.__handler.namer = self.namer
         Logger.__init__(
             self,
             logger_name=logger_name,
-            handler=__handler,
+            handler=self.__handler,
             loglevel=loglevel
         )
 
@@ -262,3 +271,7 @@ class RotationLogger(Logger):
         self.handler.emit('Rollover the log file')
         super(RotationLogger, self).add_handler(self.handler)
     '''
+
+    def close(self):
+        self.__handler.close()
+        super(RotationLogger, self).close()
