@@ -10,73 +10,81 @@
 #-------------------------------------------------------------------------------
 from abc import ABCMeta, abstractmethod
 from mylogger.logger import Logger
+from logging import WARNING
 import os
 
 
-LOG_FILE = "log.log"
 ROLLOVER_SIZE = 100 * 1024 * 1024
+
 
 class Factory(metaclass=ABCMeta):
     """this class is abstrct class."""
 
-    def __init__(self, loglevel=None):
-        if loglevel is not None and \
-                       not loglevel in {10, 20, 30, 40, 50}:
-            raise TypeError("set valid loglevel in the range of 10 or 20 or 30 or 40 or 50")
-
-        self.loglevel = loglevel
-        if loglevel is None:
-            self.loglevel = 20
-        # set loglevel.
-        Logger.loglevel = self.loglevel
+    def __init__(self, logger_name=None, loglevel=WARNING):
+        self._logger_name = logger_name
+        self._loglevel = loglevel
 
     @abstractmethod
-    def create(self, loglevel: int):
+    def create(self):
         pass
 
 class StdoutLoggerFactory(Factory):
     """this class is a StreamLogger Factory."""
 
-    def __init__(self, logger_name=None, loglevel=None):
-        self._logger_name = logger_name
-        super(StdoutLoggerFactory, self).__init__(loglevel)
+    def __init__(self, logger_name=None, loglevel=WARNING):
+        super(StdoutLoggerFactory, self).__init__(
+            logger_name=logger_name,
+            loglevel=loglevel)
 
     def create(self):
         from mylogger.logger import StreamLogger
-        return StreamLogger(self._logger_name)
+        return StreamLogger(self._logger_name, loglevel=self._loglevel)
 
 class FileLoggerFactory(Factory):
 
-    def __init__(self, logger_name=None, loglevel=None):
-        self._logger_name = logger_name
-        super(FileLoggerFactory, self).__init__(loglevel)
+    def __init__(self, logger_name=None, loglevel=WARNING):
+        super(FileLoggerFactory, self).__init__(
+            logger_name=logger_name,
+            loglevel=loglevel
+        )
 
-    def create(self, file=LOG_FILE):
+    def create(self, filename):
         """
         create FileLogger instance.
         if file param is unset, log is outputed in current directory named 'log.log'
 
         Args:
-            param1 file: log file path. defulat is written in 'log.log'
+            param1 filename: log file path.
 
         Return:
             FileLogger instance.
         """
         from mylogger.logger import FileLogger
         # if there is no the log file directory, make the directory.
-        split_path = os.path.split(file)
-        if not split_path[0] == '':
+        split_path = os.path.split(filename)
+        if not split_path[0] != '':
             if not os.path.exists(split_path[0]):
                 os.makedirs(split_path[0])
-        return FileLogger(filename=file, logger_name=self._logger_name)
+        return FileLogger(
+            filename=filename,
+            logger_name=self._logger_name,
+            loglevel=self._loglevel)
 
 class RotationLoggerFactory(Factory):
     """this class is a RotationLoggerFactory."""
     def __init__(self, logger_name=None, loglevel=None):
         self._logger_name = logger_name
-        super(RotationLoggerFactory, self).__init__(loglevel)
+        super(RotationLoggerFactory, self).__init__(
+            logger_name=logger_name,
+            loglevel=loglevel
+        )
 
-    def create(self, file=LOG_FILE, bcount=None, max_bytes=ROLLOVER_SIZE):
+    def create(
+        self,
+        filename,
+        bcount=None,
+        max_bytes=None,
+        is_change_fname=False):
         """
         create RotationLogger instance.
         if file param is unset, log is outputed in current directory named 'log.log'
@@ -91,10 +99,16 @@ class RotationLoggerFactory(Factory):
         """
         from mylogger.logger import RotationLogger
         # if there is no the log file directory, make the directory.
-        split_path = os.path.split(file)
+        split_path = os.path.split(filename)
         if not split_path[0] == '':
             if not os.path.exists(split_path[0]):
                 os.makedirs(split_path[0])
-        return RotationLogger(filename=file, logger_name=self._logger_name,
-                              bcount=bcount, max_bytes=max_bytes)
+        return RotationLogger(
+            filename=filename,
+            logger_name=self._logger_name,
+            bcount=bcount,
+            max_bytes=max_bytes,
+            loglevel=self._loglevel,
+            is_change_fname=is_change_fname
+        )
 

@@ -28,7 +28,7 @@ class Logger(object):
     ##==============================##
     loglevel = WARNING
 
-    def __init__(self, logger_name: str, handler):
+    def __init__(self, logger_name: str, handler, loglevel=None):
         """コンストラクタ
 
         Args:
@@ -37,6 +37,12 @@ class Logger(object):
 
         Returns:
         """
+        self.name = logger_name
+        self.loglevel = loglevel
+        if self.loglevel is None:
+            self.loglevel = Logger.loglevel
+        elif self.loglevel not in {10, 20, 30, 40, 50}:
+            raise TypeError("set a valid loglevel between 10 and 50")
         # ロガー作成.
         self._logger = getLogger(str(logger_name))
         self._logger.setLevel(self.loglevel)
@@ -119,13 +125,34 @@ class Logger(object):
                 DEBUG... 10
         """
         self.loglevel = level
-        self._logger.setLevel(self.loglevel)
         self.h.setLevel(self.loglevel)
+        self._logger.setLevel(self.loglevel)
         self._logger.addHandler(self.h)
+
+    def close_handler(self):
+        self.h.close()
 
     def add_handler(self, handler):
         """add handler to root logger."""
+        # set handler
+        self.h = handler
+        # set loglevel
+        self.h.setLevel(self.loglevel)
+        # set formatter
+        formatter = Formatter(
+            '%(asctime)s-%(name)s [%(levelname)s] : %(message)s')
+        self.h.setFormatter(formatter)
+        # add handler to logger
         self._logger.addHandler(handler)
+
+    def remove_handler(self, handler):
+        """remove the specified handler from logger.
+        
+        Args:
+            handler ([type]): logging.Handler()
+        """
+        self._logger.removeHandler(handler)
+
 
     def close(self):
         """close handling"""
@@ -135,25 +162,31 @@ class Logger(object):
 class StreamLogger(Logger):
     """標準出力、エラー出力にログを出力するロガーを提供するクラス."""
 
-    def __init__(self, logger_name: str):
+    def __init__(self, logger_name: str, loglevel=None):
         if logger_name is None:
             logger_name = str(self)
-        Logger.__init__(self, logger_name=str(self), handler=StreamHandler())
+        Logger.__init__(
+            self,
+            logger_name=logger_name,
+            handler=StreamHandler(),
+            loglevel=loglevel
+        )
 
 
 class FileLogger(Logger):
 
     """ディスク上のファイルにログを出力するロガーを提供するクラス."""
-    def __init__(self, filename: str, logger_name: str):
+    def __init__(self, filename: str, logger_name: str, loglevel=None):
         if logger_name is None:
             logger_name = str(self)
-        self.handler = FileHandler(filename=filename, mode='a+')
-        Logger.__init__(self, logger_name=logger_name, handler=self.handler)
+        self.filename = filename
+        __handler = FileHandler(filename=self.filename, mode='a+')
+        Logger.__init__(
+            self,
+            logger_name=logger_name,
+            handler=__handler,
+            loglevel=loglevel)
 
-    def close(self):
-        """close current stream."""
-        self.handler.close()
-        super(FileLogger, self).close()
 
 class RotationLogger(Logger):
     """ディスク上のファイルにログを出力するロガーを提供するクラス.
@@ -163,24 +196,51 @@ class RotationLogger(Logger):
     # use set_backupCount() to change this variable.
     backupCount = 3
 
-    def __init__(self, filename: str, logger_name: str, bcount=None, max_bytes=0):
+    def __init__(
+        self,
+        filename: str,
+        logger_name: str=None,
+        bcount=None,
+        max_bytes=0,
+        loglevel=None,
+        is_change_fname=False
+    ):
         """constructor
-            Args:
-                param1 filename: log file name.
-                param2 bcount: generation control count for backup log files.
+        Args:
+            positional:
+                filename[str]: log file name.
+            optional:
+                bcount[int]: generation control count for backup log files.
                     default is 3 gen. for example, <basefilename>.1 ~ .3
+                logger_name[str]: logger name. instance repl by default.
+                max_bytes[int]: done the rotation by using file size(bytes)
+                loglevel[int]: log level of the this logger.
+                    the default value, dependent on the parent class.
+                is_change_fname[bool]: enable namer() function which is called
+                    when be rotated the log file.
         """
-        if bcount is None:
-            bcount = self.backupCount
+        self.bcount = bcount
+        self.filename = filename
+        self.max_bytes = max_bytes
+        self.is_change_fname = is_change_fname
+
         if logger_name is None:
             logger_name = str(self)
-        self.filename = filename
-        self.handler = RotatingFileHandler(filename=filename,
-                                           mode='a+',
-                                           backupCount=bcount,
-                                           maxBytes=max_bytes)
-        self.handler.namer = self.namer
-        Logger.__init__(self, logger_name=logger_name, handler=self.handler)
+        if self.bcount is None:
+            self.bcount = RotationLogger.backupCount
+
+        __handler = RotatingFileHandler(filename=filename,
+                                        mode='a+',
+                                        backupCount=self.bcount,
+                                        maxBytes=self.max_bytes)
+        if self.is_change_fname:
+            __handler.namer = self.namer
+        Logger.__init__(
+            self,
+            logger_name=logger_name,
+            handler=__handler,
+            loglevel=loglevel
+        )
 
     def namer(self, path):
         """override method of RotationFileHandler.rotation_filename"""
@@ -202,14 +262,3 @@ class RotationLogger(Logger):
         self.handler.emit('Rollover the log file')
         super(RotationLogger, self).add_handler(self.handler)
     '''
-
-    def set_backupCount(self, v: int):
-        """backupCount setter."""
-        self.backupCount = v
-        self.handler.backupCount = self.backupCount
-
-    def close(self):
-        self.handler.close()
-        super(RotationLogger, self).close()
-
-
