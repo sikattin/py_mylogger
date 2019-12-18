@@ -47,14 +47,16 @@ class Logger(object):
         self._logger = getLogger(str(logger_name))
         self._logger.setLevel(self.loglevel)
         # ハンドラの作成.
-        self.h = handler
-        self.h.setLevel(self.loglevel)
+        self.h = list()
+        handler.setLevel(self.loglevel)
         # フォーマッターの作成.
         formatter = Formatter(
             '%(asctime)s-%(name)s [%(levelname)s] : %(message)s')
-        self.h.setFormatter(formatter)
+        handler.setFormatter(formatter)
+        self.h.append(handler)
+
         # ロガーにハンドラを追加.
-        self._logger.addHandler(self.h)
+        self._logger.addHandler(handler)
         # ログを親に伝播させない.
         self._logger.propagate = False
 
@@ -125,38 +127,42 @@ class Logger(object):
                 DEBUG... 10
         """
         self.loglevel = level
-        self.h.setLevel(self.loglevel)
         self._logger.setLevel(self.loglevel)
-        self._logger.addHandler(self.h)
-
-    def close_handler(self):
-        self.h.close()
+        [h.setLevel(self.loglevel) for h in self.h]
 
     def add_handler(self, handler):
         """add handler to root logger."""
         # set handler
-        self.h = handler
         # set loglevel
-        self.h.setLevel(self.loglevel)
+        handler.setLevel(self.loglevel)
         # set formatter
         formatter = Formatter(
             '%(asctime)s-%(name)s [%(levelname)s] : %(message)s')
-        self.h.setFormatter(formatter)
+        handler.setFormatter(formatter)
         # add handler to logger
+        self.h.append(handler)
         self._logger.addHandler(handler)
 
-    def remove_handler(self, handler):
+    def __remove_handler(self, handler):
         """remove the specified handler from logger.
         
         Args:
             handler ([type]): logging.Handler()
         """
+        self.h.remove(handler)
         self._logger.removeHandler(handler)
 
 
     def close(self):
         """close handling"""
-        self.h.close()
+        self.__close_handlers()
+
+    def close_handler(self, handler):
+        handler.close()
+        self.__remove_handler(handler)
+
+    def __close_handlers(self):
+        [h.close() for h in self.h]
 
 
 class StreamLogger(Logger):
@@ -175,7 +181,7 @@ class StreamLogger(Logger):
 
     def close(self):
         self.__handler.close()
-        super(StreamLogger, self).close()
+        super(StreamLogger, self).close_handler(self.__handler)
 
 
 class FileLogger(Logger):
@@ -194,7 +200,7 @@ class FileLogger(Logger):
 
     def close(self):
         self.__handler.close()
-        super(FileLogger, self).close()
+        super(FileLogger, self).close_handler(self.__handler)
 
 
 class RotationLogger(Logger):
@@ -274,4 +280,4 @@ class RotationLogger(Logger):
 
     def close(self):
         self.__handler.close()
-        super(RotationLogger, self).close()
+        super(RotationLogger, self).close_handler(self.__handler)

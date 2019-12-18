@@ -83,7 +83,7 @@ class RotationLoggerFactory(Factory):
         self,
         filename,
         bcount=None,
-        max_bytes=None,
+        max_bytes=0,
         is_change_fname=False):
         """
         create RotationLogger instance.
