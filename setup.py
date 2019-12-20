@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Learn more: https://github.com/kennethreitz/setup.py
 
 from setuptools import setup, find_packages
 
@@ -14,10 +13,10 @@ with open('LICENSE') as f:
 setup(
     name='mylogger',
     version='1.2',
-    description='logger module.',
-    long_description='logger module',
+    description='useful logger module.',
+    long_description='useful logger module',
     author='Takeki Shikano',
-    author_email='shikano.takeki@nexon.co.jp',
+    author_email='',
     url=None,
     license='MIT',
     packages=find_packages(exclude=('tests', 'docs'))
